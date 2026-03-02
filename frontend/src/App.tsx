@@ -729,8 +729,8 @@ export default function App() {
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-3">
           {/* 2D Distribution Chart */}
           {conePoints.length > 0 && (
-            <div className="w-[660px] h-[200px] bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 relative">
-              <span className="absolute top-2.5 left-4 text-[9px] font-mono uppercase tracking-widest text-white/25 z-10">
+            <div className="w-[80vw] max-w-[1100px] h-[220px] bg-white/[0.03] backdrop-blur-md rounded-3xl border border-white/10 shadow-2xl relative">
+              <span className="absolute top-3 left-5 text-[10px] font-mono uppercase tracking-widest text-white/30 z-10">
                 Forecast Range
               </span>
               <DistributionChart

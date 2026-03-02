@@ -93,11 +93,11 @@ export default function DistributionChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart data={chartData} margin={{ top: 20, right: 12, bottom: 2, left: 0 }}>
+      <ComposedChart data={chartData} margin={{ top: 24, right: 16, bottom: 4, left: 4 }}>
         <XAxis
           dataKey="time"
           stroke="rgba(255,255,255,0.08)"
-          tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace, monospace' }}
+          tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.45)', fontFamily: 'ui-monospace, monospace' }}
           tickFormatter={formatTime}
           ticks={xTicks}
           axisLine={false}
@@ -106,9 +106,9 @@ export default function DistributionChart({
         <YAxis
           domain={domain}
           stroke="rgba(255,255,255,0.08)"
-          tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace, monospace' }}
+          tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.45)', fontFamily: 'ui-monospace, monospace' }}
           tickFormatter={formatChartPrice}
-          width={54}
+          width={58}
           axisLine={false}
           tickLine={false}
           allowDataOverflow
@@ -130,21 +130,21 @@ export default function DistributionChart({
 
         {/* Stacked percentile bands */}
         <Area stackId="bands" type="monotone" dataKey="base" fill="transparent" stroke="none" isAnimationActive={false} />
-        <Area stackId="bands" type="monotone" dataKey="b4l" fill={`rgba(${BAND}, 0.06)`} stroke="none" isAnimationActive={false} />
-        <Area stackId="bands" type="monotone" dataKey="b3l" fill={`rgba(${BAND}, 0.12)`} stroke="none" isAnimationActive={false} />
-        <Area stackId="bands" type="monotone" dataKey="b2l" fill={`rgba(${BAND}, 0.22)`} stroke="none" isAnimationActive={false} />
-        <Area stackId="bands" type="monotone" dataKey="b1l" fill={`rgba(${BAND}, 0.35)`} stroke="none" isAnimationActive={false} />
-        <Area stackId="bands" type="monotone" dataKey="b1h" fill={`rgba(${BAND}, 0.35)`} stroke="none" isAnimationActive={false} />
-        <Area stackId="bands" type="monotone" dataKey="b2h" fill={`rgba(${BAND}, 0.22)`} stroke="none" isAnimationActive={false} />
-        <Area stackId="bands" type="monotone" dataKey="b3h" fill={`rgba(${BAND}, 0.12)`} stroke="none" isAnimationActive={false} />
-        <Area stackId="bands" type="monotone" dataKey="b4h" fill={`rgba(${BAND}, 0.06)`} stroke="none" isAnimationActive={false} />
+        <Area stackId="bands" type="monotone" dataKey="b4l" fill={`rgba(${BAND}, 0.15)`} stroke="none" isAnimationActive={false} />
+        <Area stackId="bands" type="monotone" dataKey="b3l" fill={`rgba(${BAND}, 0.25)`} stroke="none" isAnimationActive={false} />
+        <Area stackId="bands" type="monotone" dataKey="b2l" fill={`rgba(${BAND}, 0.35)`} stroke="none" isAnimationActive={false} />
+        <Area stackId="bands" type="monotone" dataKey="b1l" fill={`rgba(${BAND}, 0.50)`} stroke="none" isAnimationActive={false} />
+        <Area stackId="bands" type="monotone" dataKey="b1h" fill={`rgba(${BAND}, 0.50)`} stroke="none" isAnimationActive={false} />
+        <Area stackId="bands" type="monotone" dataKey="b2h" fill={`rgba(${BAND}, 0.35)`} stroke="none" isAnimationActive={false} />
+        <Area stackId="bands" type="monotone" dataKey="b3h" fill={`rgba(${BAND}, 0.25)`} stroke="none" isAnimationActive={false} />
+        <Area stackId="bands" type="monotone" dataKey="b4h" fill={`rgba(${BAND}, 0.15)`} stroke="none" isAnimationActive={false} />
 
         {/* Median line */}
-        <Line type="monotone" dataKey="median" stroke="#38bdf8" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+        <Line type="monotone" dataKey="median" stroke="rgba(56, 189, 248, 0.8)" strokeWidth={2} dot={false} isAnimationActive={false} />
 
         {/* Explorer: target line */}
         {targetLine != null && (
-          <ReferenceLine y={targetLine} stroke="rgba(255,255,255,0.6)" strokeDasharray="6 3" strokeWidth={1} />
+          <ReferenceLine y={targetLine} stroke="rgba(255,255,255,0.85)" strokeDasharray="6 3" strokeWidth={1.5} />
         )}
 
         {/* Scanner: liquidation / TP / SL */}
