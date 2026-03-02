@@ -314,7 +314,7 @@ const Surface = ({ data, horizonDays, targetLine, liquidationPrice, takeProfit, 
 export default function ProbabilityCone3D(props: ProbabilityCone3DProps) {
   return (
     <div className="absolute inset-0 w-full h-full bg-[#000000] z-0">
-      <Canvas camera={{ position: [8, 4, 8], fov: 55 }}>
+      <Canvas camera={{ position: [2, 5, 14], fov: 50 }}>
         <color attach="background" args={['#000000']} />
         <ambientLight intensity={0.2} />
         <pointLight position={[10, 10, 10]} intensity={0.5} />
@@ -322,14 +322,15 @@ export default function ProbabilityCone3D(props: ProbabilityCone3DProps) {
         <Surface {...props} />
 
         <OrbitControls
+          target={[0, -1, 0]}
           enableZoom={true}
           enablePan={false}
-          /* Vertical: lock to ±15° around default (~70.5° polar) */
-          minPolarAngle={Math.PI * 0.3}
-          maxPolarAngle={Math.PI * 0.47}
-          /* Horizontal: ±35° around default (π/4 ≈ 0.785 rad) */
-          minAzimuthAngle={-Math.PI / 12}
-          maxAzimuthAngle={Math.PI / 2.4}
+          /* Vertical: ±15° around default (~67° polar) */
+          minPolarAngle={Math.PI * 0.29}
+          maxPolarAngle={Math.PI * 0.46}
+          /* Horizontal: ±35° around default (~8° azimuth) */
+          minAzimuthAngle={-Math.PI / 7}
+          maxAzimuthAngle={Math.PI / 4}
           autoRotate={false}
           enableDamping={true}
           dampingFactor={0.08}
