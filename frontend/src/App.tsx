@@ -4,6 +4,7 @@ import { Activity, Crosshair, ShieldAlert, ChevronDown, Info, Loader2, WifiOff }
 import { fetchAssets, fetchCone, fetchProbability, fetchPositionRisk } from './api';
 import type { Asset, ConePoint, ConeRenderData, ProbabilityResponse, PositionRiskResponse } from './types';
 import ProbabilityCone3D from './ProbabilityCone3D';
+import DistributionChart from './DistributionChart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -64,8 +65,10 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 3D cone
+  // 3D cone + 2D chart
   const [coneRenderData, setConeRenderData] = useState<ConeRenderData | null>(null);
+  const [conePoints, setConePoints] = useState<ConePoint[]>([]);
+  const [coneCurrentPrice, setConeCurrentPrice] = useState<number>(0);
   const horizonDays = horizon === '1h' ? 1 / 24 : 1;
 
   // Explorer state
@@ -131,6 +134,8 @@ export default function App() {
     fetchCone(selectedSymbol, horizon)
       .then((cone) => {
         setConeRenderData(deriveConeRenderData(cone.points, cone.current_price, horizon));
+        setConePoints(cone.points);
+        setConeCurrentPrice(cone.current_price);
         setLoading(false);
       })
       .catch(() => {
@@ -189,6 +194,8 @@ export default function App() {
           setProbResult(result);
           if (result.cone) {
             setConeRenderData(deriveConeRenderData(result.cone.points, result.cone.current_price, horizon));
+            setConePoints(result.cone.points);
+            setConeCurrentPrice(result.cone.current_price);
           }
           setExplorerLoading(false);
         })
@@ -217,6 +224,8 @@ export default function App() {
             setConeRenderData(
               deriveConeRenderData(result.cone_with_levels.cone, result.current_price, horizon),
             );
+            setConePoints(result.cone_with_levels.cone);
+            setConeCurrentPrice(result.current_price);
           }
           setScannerLoading(false);
         })
@@ -413,13 +422,10 @@ export default function App() {
       <ProbabilityCone3D
         data={coneRenderData}
         horizonDays={horizonDays}
-        highlightRange={coneHighlightRange}
         targetLine={coneTargetLine}
         liquidationPrice={liquidationPriceForCone}
         takeProfit={tpForCone}
         stopLoss={slForCone}
-        horizon={horizon}
-        queryMode={activeTab === 'explorer' ? queryMode : undefined}
       />
 
       {/* UI Overlay */}
@@ -719,53 +725,72 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-        {/* Bottom Center: Mode & Horizon */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-6">
-          <div className="w-[400px] bg-black/40 backdrop-blur-xl p-5 rounded-3xl border border-white/10 shadow-2xl flex flex-col gap-4">
-            <div className="flex justify-between items-center px-1">
-              <span className="text-[10px] uppercase tracking-widest text-white/50">Forecast Horizon</span>
-              {loading && <Loader2 className="w-3 h-3 text-white/30 animate-spin" />}
+        {/* Bottom: Distribution Chart & Controls */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-3">
+          {/* 2D Distribution Chart */}
+          {conePoints.length > 0 && (
+            <div className="w-[660px] h-[200px] bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 relative">
+              <span className="absolute top-2.5 left-4 text-[9px] font-mono uppercase tracking-widest text-white/25 z-10">
+                Forecast Range
+              </span>
+              <DistributionChart
+                points={conePoints}
+                currentPrice={coneCurrentPrice}
+                horizon={horizon}
+                targetLine={coneTargetLine}
+                highlightRange={coneHighlightRange}
+                queryMode={activeTab === 'explorer' ? queryMode : undefined}
+                liquidationPrice={liquidationPriceForCone}
+                takeProfit={tpForCone}
+                stopLoss={slForCone}
+              />
             </div>
-            <div className="flex items-center gap-3">
+          )}
+
+          {/* Controls Row */}
+          <div className="flex items-center gap-3">
+            <div className="bg-black/40 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-2">
+              <span className="text-[9px] uppercase tracking-widest text-white/40 mr-1">Horizon</span>
+              {loading && <Loader2 className="w-3 h-3 text-white/30 animate-spin" />}
               <button
                 onClick={() => supports1h && setHorizon('1h')}
                 disabled={!supports1h}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-medium uppercase tracking-wider transition-all ${
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-all ${
                   horizon === '1h'
                     ? 'bg-white text-black shadow-sm'
                     : supports1h
-                      ? 'text-white/50 hover:text-white bg-white/5 border border-white/10'
-                      : 'text-white/20 bg-white/5 border border-white/5 cursor-not-allowed'
+                      ? 'text-white/50 hover:text-white'
+                      : 'text-white/20 cursor-not-allowed'
                 }`}
               >
                 1H
               </button>
               <button
                 onClick={() => setHorizon('24h')}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-medium uppercase tracking-wider transition-all ${
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-all ${
                   horizon === '24h'
                     ? 'bg-white text-black shadow-sm'
-                    : 'text-white/50 hover:text-white bg-white/5 border border-white/10'
+                    : 'text-white/50 hover:text-white'
                 }`}
               >
                 24H
               </button>
             </div>
-          </div>
 
-          <div className="flex bg-white/10 backdrop-blur-xl p-1.5 rounded-full border border-white/10 shadow-2xl">
-            <button
-              onClick={() => setActiveTab('explorer')}
-              className={`px-8 py-2.5 rounded-full text-xs font-medium uppercase tracking-widest transition-all ${activeTab === 'explorer' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}
-            >
-              Explorer
-            </button>
-            <button
-              onClick={() => setActiveTab('scanner')}
-              className={`px-8 py-2.5 rounded-full text-xs font-medium uppercase tracking-widest transition-all ${activeTab === 'scanner' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}
-            >
-              Scanner
-            </button>
+            <div className="flex bg-white/10 backdrop-blur-xl p-1.5 rounded-full border border-white/10 shadow-2xl">
+              <button
+                onClick={() => setActiveTab('explorer')}
+                className={`px-8 py-2.5 rounded-full text-xs font-medium uppercase tracking-widest transition-all ${activeTab === 'explorer' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}
+              >
+                Explorer
+              </button>
+              <button
+                onClick={() => setActiveTab('scanner')}
+                className={`px-8 py-2.5 rounded-full text-xs font-medium uppercase tracking-widest transition-all ${activeTab === 'scanner' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}
+              >
+                Scanner
+              </button>
+            </div>
           </div>
         </div>
 

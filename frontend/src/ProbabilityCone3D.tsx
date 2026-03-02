@@ -1,19 +1,16 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { ConeRenderData } from './types';
 
 interface ProbabilityCone3DProps {
   data: ConeRenderData | null;
   horizonDays: number;
-  highlightRange?: [number, number];
   targetLine?: number;
   liquidationPrice?: number;
   takeProfit?: number;
   stopLoss?: number;
-  horizon?: string;
-  queryMode?: 'above' | 'below' | 'between';
 }
 
 /** Reference spread: 15% of current price = full visual width (16 units). */
@@ -41,44 +38,6 @@ function getLogNormalDensity(x: number, currentPrice: number, volatility: number
 
 function smootherStep(t: number): number {
   return t * t * t * (t * (t * 6 - 15) + 10);
-}
-
-function formatAxisPrice(price: number): string {
-  if (price >= 10000) {
-    const k = price / 1000;
-    return k % 1 === 0 ? `$${k.toFixed(0)}k` : `$${k.toFixed(1)}k`;
-  }
-  if (price >= 1000) return `$${price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-  if (price >= 100) return `$${price.toFixed(0)}`;
-  if (price >= 1) return `$${price.toFixed(2)}`;
-  return `$${price.toFixed(4)}`;
-}
-
-function formatFullPrice(price: number): string {
-  if (price >= 1000) return `$${price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-  if (price >= 1) return `$${price.toFixed(2)}`;
-  return `$${price.toFixed(4)}`;
-}
-
-function niceStep(range: number, targetSteps: number): number {
-  const rough = range / targetSteps;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
-  const normalized = rough / magnitude;
-  let nice: number;
-  if (normalized < 1.5) nice = 1;
-  else if (normalized < 3.5) nice = 2;
-  else if (normalized < 7.5) nice = 5;
-  else nice = 10;
-  return nice * magnitude;
-}
-
-function priceToWorldZ(price: number, minPrice: number, priceRange: number, scaledWidth: number): number {
-  const frac = (price - minPrice) / priceRange;
-  return (0.5 - frac) * scaledWidth;
-}
-
-function timeFracToWorldX(frac: number): number {
-  return frac * BASE_WIDTH - BASE_WIDTH / 2;
 }
 
 // ---------------------------------------------------------------------------
@@ -134,144 +93,6 @@ function computeTargetPositions(
 }
 
 // ---------------------------------------------------------------------------
-// ConeLabels — HTML overlays projected from 3D positions
-// ---------------------------------------------------------------------------
-
-interface ConeLabelsProps {
-  data: ConeRenderData;
-  horizon: string;
-  targetLine?: number;
-  liquidationPrice?: number;
-  takeProfit?: number;
-  stopLoss?: number;
-}
-
-interface LabelDef {
-  key: string;
-  text: string;
-  position: [number, number, number];
-  className: string;
-}
-
-function ConeLabels({ data, horizon, targetLine, liquidationPrice, takeProfit, stopLoss }: ConeLabelsProps) {
-  const labels = useMemo(() => {
-    const spreadScale = Math.max(MIN_SCALE, Math.min(1.0, data.spreadPct / REF_SPREAD));
-    const scaledWidth = BASE_WIDTH * spreadScale;
-    const priceRange = data.maxPrice - data.minPrice;
-
-    const toWorldZ = (price: number) => priceToWorldZ(price, data.minPrice, priceRange, scaledWidth);
-
-    const all: LabelDef[] = [];
-
-    // ── Price axis labels ─────────────────────────────────────────────
-    const step = niceStep(priceRange, 5);
-    const firstPrice = Math.ceil(data.minPrice / step) * step;
-    for (let p = firstPrice, idx = 0; p <= data.maxPrice; p += step, idx++) {
-      all.push({
-        key: `price-${idx}`,
-        text: formatAxisPrice(p),
-        position: [BASE_WIDTH / 2 + 1.5, MESH_Y + 0.1, toWorldZ(p)],
-        className: 'text-white/25 text-[10px] font-mono tracking-wider',
-      });
-    }
-
-    // ── Time axis labels ──────────────────────────────────────────────
-    const edgeZ = scaledWidth / 2 + 1.0;
-
-    all.push({
-      key: 'time-now',
-      text: 'Now',
-      position: [timeFracToWorldX(0), MESH_Y - 0.4, edgeZ],
-      className: 'text-white/35 text-[10px] font-mono tracking-widest uppercase',
-    });
-
-    if (horizon === '1h') {
-      all.push(
-        { key: 'time-15m', text: '15m', position: [timeFracToWorldX(0.25), MESH_Y - 0.4, edgeZ], className: 'text-white/20 text-[10px] font-mono tracking-wider' },
-        { key: 'time-30m', text: '30m', position: [timeFracToWorldX(0.5), MESH_Y - 0.4, edgeZ], className: 'text-white/20 text-[10px] font-mono tracking-wider' },
-        { key: 'time-45m', text: '45m', position: [timeFracToWorldX(0.75), MESH_Y - 0.4, edgeZ], className: 'text-white/20 text-[10px] font-mono tracking-wider' },
-        { key: 'time-end', text: '1h', position: [timeFracToWorldX(1), MESH_Y - 0.4, edgeZ], className: 'text-white/35 text-[10px] font-mono tracking-widest uppercase' },
-      );
-    } else {
-      all.push(
-        { key: 'time-6h', text: '6h', position: [timeFracToWorldX(0.25), MESH_Y - 0.4, edgeZ], className: 'text-white/20 text-[10px] font-mono tracking-wider' },
-        { key: 'time-12h', text: '12h', position: [timeFracToWorldX(0.5), MESH_Y - 0.4, edgeZ], className: 'text-white/20 text-[10px] font-mono tracking-wider' },
-        { key: 'time-18h', text: '18h', position: [timeFracToWorldX(0.75), MESH_Y - 0.4, edgeZ], className: 'text-white/20 text-[10px] font-mono tracking-wider' },
-        { key: 'time-end', text: '24h', position: [timeFracToWorldX(1), MESH_Y - 0.4, edgeZ], className: 'text-white/35 text-[10px] font-mono tracking-widest uppercase' },
-      );
-    }
-
-    // ── Current price label (at cone tip) ─────────────────────────────
-    const cpWorldZ = toWorldZ(data.currentPrice);
-    all.push({
-      key: 'current-price',
-      text: formatFullPrice(data.currentPrice),
-      position: [timeFracToWorldX(0) - 1.5, MESH_Y + 1.8, cpWorldZ],
-      className: 'text-white/60 text-xs font-mono font-medium',
-    });
-
-    // ── Line labels ───────────────────────────────────────────────────
-    const lineX = timeFracToWorldX(0.65);
-
-    if (targetLine != null && targetLine >= data.minPrice && targetLine <= data.maxPrice) {
-      all.push({
-        key: 'line-target',
-        text: formatFullPrice(targetLine),
-        position: [lineX, MESH_Y + 0.8, toWorldZ(targetLine)],
-        className: 'text-white text-[11px] font-mono font-medium bg-black/40 px-1.5 py-0.5 rounded',
-      });
-    }
-
-    if (liquidationPrice != null && liquidationPrice >= data.minPrice && liquidationPrice <= data.maxPrice) {
-      all.push({
-        key: 'line-liq',
-        text: `LIQ ${formatFullPrice(liquidationPrice)}`,
-        position: [lineX, MESH_Y + 0.8, toWorldZ(liquidationPrice)],
-        className: 'text-rose-400 text-[11px] font-mono font-medium bg-black/40 px-1.5 py-0.5 rounded',
-      });
-    }
-
-    if (takeProfit != null && takeProfit >= data.minPrice && takeProfit <= data.maxPrice) {
-      all.push({
-        key: 'line-tp',
-        text: `TP ${formatFullPrice(takeProfit)}`,
-        position: [lineX, MESH_Y + 0.8, toWorldZ(takeProfit)],
-        className: 'text-emerald-400 text-[11px] font-mono font-medium bg-black/40 px-1.5 py-0.5 rounded',
-      });
-    }
-
-    if (stopLoss != null && stopLoss >= data.minPrice && stopLoss <= data.maxPrice) {
-      all.push({
-        key: 'line-sl',
-        text: `SL ${formatFullPrice(stopLoss)}`,
-        position: [lineX, MESH_Y + 0.8, toWorldZ(stopLoss)],
-        className: 'text-amber-400 text-[11px] font-mono font-medium bg-black/40 px-1.5 py-0.5 rounded',
-      });
-    }
-
-    return all;
-  }, [data, horizon, targetLine, liquidationPrice, takeProfit, stopLoss]);
-
-  return (
-    <group>
-      {labels.map((l) => (
-        <Html
-          key={l.key}
-          position={l.position}
-          center
-          style={{ pointerEvents: 'none' }}
-          zIndexRange={[1, 0]}
-        >
-          <span className={`whitespace-nowrap select-none ${l.className}`}>
-            {l.text}
-          </span>
-        </Html>
-      ))}
-    </group>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Surface mesh with shaders
 // ---------------------------------------------------------------------------
 
@@ -291,15 +112,11 @@ const VERTEX_SHADER = `
 const FRAGMENT_SHADER = `
   uniform vec3 uColorStart;
   uniform vec3 uColorEnd;
-  uniform float uHighlightMin;
-  uniform float uHighlightMax;
-  uniform vec3 uHighlightColor;
   uniform float uTargetLine;
   uniform float uLiquidation;
   uniform float uTakeProfit;
   uniform float uStopLoss;
   uniform float uTime;
-  uniform float uQueryMode;
 
   varying vec2 vUv;
   varying float vElevation;
@@ -317,35 +134,6 @@ const FRAGMENT_SHADER = `
 
     if (gridX < 0.04 || gridY < 0.04) {
       color += vec3(0.06, 0.15, 0.35) * gridFade * (1.0 - mixStrength * 0.5);
-    }
-
-    // Directional region highlighting
-    if (uHighlightMin >= 0.0 && uHighlightMax >= 0.0) {
-      bool inRegion = (vUv.y >= uHighlightMin && vUv.y <= uHighlightMax);
-
-      if (uQueryMode > 0.5) {
-        // Explorer mode: directional tinting
-        if (inRegion) {
-          vec3 tint;
-          if (uQueryMode < 1.5) {
-            tint = vec3(0.04, 0.18, 0.06);
-          } else if (uQueryMode < 2.5) {
-            tint = vec3(0.18, 0.04, 0.04);
-          } else {
-            tint = vec3(0.14, 0.10, 0.02);
-          }
-          float pulse = 0.5 + 0.5 * sin(uTime * 1.5 - vUv.x * 4.0);
-          color += tint * (0.8 + 0.3 * pulse);
-        } else {
-          color *= 0.55;
-        }
-      } else {
-        // Scanner mode fallback: white pulse
-        if (inRegion) {
-          float pulse = 0.5 + 0.5 * sin(uTime * 2.0 - vUv.x * 5.0);
-          color = mix(color, uHighlightColor, 0.2 + 0.15 * pulse);
-        }
-      }
     }
 
     // Line overlays
@@ -380,15 +168,13 @@ const FRAGMENT_SHADER = `
   }
 `;
 
-const Surface = ({ data, horizonDays, highlightRange, targetLine, liquidationPrice, takeProfit, stopLoss, queryMode }: ProbabilityCone3DProps) => {
+const Surface = ({ data, horizonDays, targetLine, liquidationPrice, takeProfit, stopLoss }: ProbabilityCone3DProps) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
 
   const currentPositionsRef = useRef<Float32Array | null>(null);
   const targetPositionsRef = useRef<Float32Array | null>(null);
   const animProgressRef = useRef(1.0);
-
-  const queryModeValue = queryMode === 'above' ? 1 : queryMode === 'below' ? 2 : queryMode === 'between' ? 3 : 0;
 
   const { geometry, uniforms } = useMemo(() => {
     if (!data) {
@@ -398,14 +184,10 @@ const Surface = ({ data, horizonDays, highlightRange, targetLine, liquidationPri
           uTime: { value: 0 },
           uColorStart: { value: new THREE.Color('#1e293b') },
           uColorEnd: { value: new THREE.Color('#38bdf8') },
-          uHighlightMin: { value: -1 },
-          uHighlightMax: { value: -1 },
-          uHighlightColor: { value: new THREE.Color('#ffffff') },
           uTargetLine: { value: -1 },
           uLiquidation: { value: -1 },
           uTakeProfit: { value: -1 },
           uStopLoss: { value: -1 },
-          uQueryMode: { value: 0 },
         },
       };
     }
@@ -453,18 +235,14 @@ const Surface = ({ data, horizonDays, highlightRange, targetLine, liquidationPri
       uTime: { value: 0 },
       uColorStart: { value: new THREE.Color('#1e293b') },
       uColorEnd: { value: new THREE.Color('#38bdf8') },
-      uHighlightMin: { value: highlightRange ? (highlightRange[0] - minPrice) / priceRange : -1 },
-      uHighlightMax: { value: highlightRange ? (highlightRange[1] - minPrice) / priceRange : -1 },
-      uHighlightColor: { value: new THREE.Color('#ffffff') },
       uTargetLine: { value: targetLine != null ? (targetLine - minPrice) / priceRange : -1 },
       uLiquidation: { value: liquidationPrice != null ? (liquidationPrice - minPrice) / priceRange : -1 },
       uTakeProfit: { value: takeProfit != null ? (takeProfit - minPrice) / priceRange : -1 },
       uStopLoss: { value: stopLoss != null ? (stopLoss - minPrice) / priceRange : -1 },
-      uQueryMode: { value: queryModeValue },
     };
 
     return { geometry: geom, uniforms: unifs };
-  }, [data, horizonDays, highlightRange, targetLine, liquidationPrice, takeProfit, stopLoss, queryModeValue]);
+  }, [data, horizonDays, targetLine, liquidationPrice, takeProfit, stopLoss]);
 
   useEffect(() => {
     if (!data) return;
@@ -534,8 +312,6 @@ const Surface = ({ data, horizonDays, highlightRange, targetLine, liquidationPri
 // ---------------------------------------------------------------------------
 
 export default function ProbabilityCone3D(props: ProbabilityCone3DProps) {
-  const { data, horizon } = props;
-
   return (
     <div className="absolute inset-0 w-full h-full bg-[#000000] z-0">
       <Canvas camera={{ position: [12, 6, 12], fov: 40 }}>
@@ -544,17 +320,6 @@ export default function ProbabilityCone3D(props: ProbabilityCone3DProps) {
         <pointLight position={[10, 10, 10]} intensity={0.5} />
 
         <Surface {...props} />
-
-        {data && horizon && (
-          <ConeLabels
-            data={data}
-            horizon={horizon}
-            targetLine={props.targetLine}
-            liquidationPrice={props.liquidationPrice}
-            takeProfit={props.takeProfit}
-            stopLoss={props.stopLoss}
-          />
-        )}
 
         <OrbitControls
           enableZoom={true}
