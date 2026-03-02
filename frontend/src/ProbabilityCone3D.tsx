@@ -314,7 +314,7 @@ const Surface = ({ data, horizonDays, targetLine, liquidationPrice, takeProfit, 
 export default function ProbabilityCone3D(props: ProbabilityCone3DProps) {
   return (
     <div className="absolute inset-0 w-full h-full bg-[#000000] z-0">
-      <Canvas camera={{ position: [12, 6, 12], fov: 40 }}>
+      <Canvas camera={{ position: [8, 4, 8], fov: 55 }}>
         <color attach="background" args={['#000000']} />
         <ambientLight intensity={0.2} />
         <pointLight position={[10, 10, 10]} intensity={0.5} />
