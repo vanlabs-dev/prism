@@ -60,7 +60,7 @@ export default function App() {
   // Core state
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState<string>('BTC');
-  const [activeTab, setActiveTab] = useState<'explorer' | 'scanner'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'scanner'>('scanner');
   const [horizon, setHorizon] = useState<string>('24h');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -779,16 +779,16 @@ export default function App() {
 
             <div className="flex bg-white/10 backdrop-blur-xl p-1.5 rounded-full border border-white/10 shadow-2xl">
               <button
-                onClick={() => setActiveTab('explorer')}
-                className={`px-8 py-2.5 rounded-full text-xs font-medium uppercase tracking-widest transition-all ${activeTab === 'explorer' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}
-              >
-                Explorer
-              </button>
-              <button
                 onClick={() => setActiveTab('scanner')}
                 className={`px-8 py-2.5 rounded-full text-xs font-medium uppercase tracking-widest transition-all ${activeTab === 'scanner' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}
               >
                 Scanner
+              </button>
+              <button
+                onClick={() => setActiveTab('explorer')}
+                className={`px-8 py-2.5 rounded-full text-xs font-medium uppercase tracking-widest transition-all ${activeTab === 'explorer' ? 'bg-white text-black shadow-lg' : 'text-white/50 hover:text-white'}`}
+              >
+                Explorer
               </button>
             </div>
           </div>
